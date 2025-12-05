@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AGI-1 UNIVERSAL TERMINAL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* HEADER */
+        .header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #111; }
+        .status { color: #00ff41; font-size: 0.8em; }
+        
+        /* MAIN MENU (GRID) */
+        #menu-screen { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .app-icon { background: #222; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; border: 1px solid #444; transition: 0.2s; }
+        .app-icon:active { transform: scale(0.95); background: #333; }
+        .icon-emoji { font-size: 2em; display: block; margin-bottom: 10px; }
+        .icon-label { font-size: 0.9em; font-weight: bold; }
+
+        /* CHAT SCREEN */
+        #chat-screen { display: none; flex-direction: column; height: 100%; }
+        #chat-history { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 20px; max-width: 80%; font-size: 0.95em; }
+        .msg.user { align-self: flex-end; background: #007aff; color: white; }
+        .msg.ai { align-self: flex-start; background: #222; color: #ddd; border: 1px solid #444; }
+        
+        /* INPUT AREA */
+        .input-box { padding: 15px; background: #111; display: flex; gap: 10px; border-top: 1px solid #333; }
+        input { flex: 1; padding: 10px; border-radius: 20px; border: none; background: #333; color: white; outline: none; }
+        button { background: #007aff; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        
+        /* BACK BUTTON */
+        .back-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="menu-screen">
+        <div style="grid-column: span 2; text-align: center; margin-bottom: 10px;">
+            <h2>AGI-1 OS</h2>
+            <div class="status">● SYSTEM ONLINE</div>
+        </div>
+
+        <div class="app-icon" onclick="openApp('DEFENSE')">
+            <span class="icon-emoji">🛡️</span>
+            <span class="icon-label">Defense</span>
+        </div>
+
+        <div class="app-icon" onclick="openApp('EDU')">
+            <span class="icon-emoji">🎓</span>
+            <span class="icon-label">Education</span>
+        </div>
+
+        <div class="app-icon" onclick="openApp('FINANCE')">
+            <span class="icon-emoji">📈</span>
+            <span class="icon-label">Finance</span>
+        </div>
+
+        <div class="app-icon" onclick="openApp('LEGAL')">
+            <span class="icon-emoji">⚖️</span>
+            <span class="icon-label">Justice</span>
+        </div>
+
+        <div class="app-icon" style="grid-column: span 2; background: #007aff;" onclick="openApp('ASSISTANT')">
+            <span class="icon-emoji">🤖</span>
+            <span class="icon-label">Jack (Personal)</span>
+        </div>
+    </div>
+
+    <div id="chat-screen">
+        <div class="header">
+            <button class="back-btn" onclick="goHome()">← Menu</button>
+            <span id="app-title" style="font-weight:bold;">APP NAME</span>
+            <span></span>
+        </div>
+        <div id="chat-history"></div>
+        <div class="input-box">
+            <input type="text" id="user-input" placeholder="Type command...">
+            <button onclick="send()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const BRAIN_URL = "https://agi-backend-final.onrender.com";
+        let currentMode = "";
+
+        function openApp(mode) {
+            currentMode = mode;
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('chat-history').innerHTML = ""; // Clear chat
+            
+            // Set Title & Welcome Message
+            const titles = {
+                'DEFENSE': 'AEGIS WAR ROOM',
+                'EDU': 'AGI TUTOR',
+                'FINANCE': 'MARKET ANALYST',
+                'LEGAL': 'LEGAL COUNSEL',
+                'ASSISTANT': 'PERSONAL JACK'
+            };
+            document.getElementById('app-title').innerText = titles[mode];
+            
+            // Auto-ping the backend to start the session
+            pingBackend(mode);
+        }
+
+        function goHome() {
+            document.getElementById('chat-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'grid';
+        }
+
+        function addMsg(role, text) {
+            const div = document.createElement('div');
+            div.className = `msg ${role}`;
+            div.innerText = text;
+            document.getElementById('chat-history').appendChild(div);
+        }
+
+        async function pingBackend(mode) {
+            addMsg('ai', "Connecting to Neural Core...");
+            
+            let endpoint = "";
+            if (mode === 'DEFENSE') endpoint = "/admin/defense/war_room";
+            if (mode === 'EDU') endpoint = "/agi/education/lesson?topic=Intro";
+            if (mode === 'FINANCE') endpoint = "/agi/finance/market";
+            if (mode === 'LEGAL') endpoint = "/agi/legal/review";
+            if (mode === 'ASSISTANT') endpoint = "/agi/assistant/dashboard";
+
+            try {
+                const res = await fetch(BRAIN_URL + endpoint);
+                const data = await res.json();
+                addMsg('ai', "Data Received: " + JSON.stringify(data, null, 2));
+            } catch (e) {
+                addMsg('ai', "Error: Brain is sleeping. Waking up...");
+            }
+        }
+
+        function send() {
+            const txt = document.getElementById('user-input').value;
+            if(!txt) return;
+            addMsg('user', txt);
+            document.getElementById('user-input').value = "";
+            setTimeout(() => addMsg('ai', "Processing... (Simulation Mode)"), 600);
+        }
+    </script>
+</body>
+</html>
