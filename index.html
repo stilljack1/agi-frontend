@@ -1,147 +1,198 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AGI-1 UNIVERSAL TERMINAL</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGI Messenger | Jack & Julia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        /* iOS / Messenger Theme */
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; height: 100vh; display: flex; flex-direction: column; }
         
         /* HEADER */
-        .header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #111; }
-        .status { color: #00ff41; font-size: 0.8em; }
+        .header { background: #f6f6f6; border-bottom: 1px solid #d1d1d6; padding: 15px; display: flex; align-items: center; justify-content: space-between; z-index: 10; padding-top: 20px; }
+        .contact-info { display: flex; align-items: center; gap: 10px; }
+        .avatar-circle { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; background: #ddd; position: relative; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .name-box { display: flex; flex-direction: column; }
+        .name { font-weight: 600; font-size: 1.1em; color: #000; }
+        .status { font-size: 0.8em; color: #34c759; } /* Green for online */
         
-        /* MAIN MENU (GRID) */
-        #menu-screen { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .app-icon { background: #222; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; border: 1px solid #444; transition: 0.2s; }
-        .app-icon:active { transform: scale(0.95); background: #333; }
-        .icon-emoji { font-size: 2em; display: block; margin-bottom: 10px; }
-        .icon-label { font-size: 0.9em; font-weight: bold; }
+        /* SWITCHER BUTTON */
+        .switch-btn { color: #007aff; font-weight: bold; cursor: pointer; font-size: 0.9em; background: none; border: none; }
 
-        /* CHAT SCREEN */
-        #chat-screen { display: none; flex-direction: column; height: 100%; }
-        #chat-history { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 20px; max-width: 80%; font-size: 0.95em; }
-        .msg.user { align-self: flex-end; background: #007aff; color: white; }
-        .msg.ai { align-self: flex-start; background: #222; color: #ddd; border: 1px solid #444; }
+        /* CHAT AREA */
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
         
+        .message { max-width: 75%; padding: 10px 16px; border-radius: 20px; font-size: 16px; line-height: 1.4; position: relative; animation: popIn 0.3s ease; }
+        
+        /* Message Styles */
+        .msg-jack { align-self: flex-start; background: #e9e9eb; color: #000; border-bottom-left-radius: 5px; }
+        .msg-julia { align-self: flex-start; background: #e9e9eb; color: #000; border-bottom-left-radius: 5px; }
+        .msg-user { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 5px; }
+        
+        .sender-name { font-size: 0.7em; margin-bottom: 2px; color: #8e8e93; margin-left: 12px; }
+
         /* INPUT AREA */
-        .input-box { padding: 15px; background: #111; display: flex; gap: 10px; border-top: 1px solid #333; }
-        input { flex: 1; padding: 10px; border-radius: 20px; border: none; background: #333; color: white; outline: none; }
-        button { background: #007aff; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .input-bar { background: #f6f6f6; padding: 10px 15px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #d1d1d6; }
+        .text-field { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #d1d1d6; font-size: 16px; outline: none; }
+        .send-btn { color: #007aff; font-weight: bold; font-size: 1em; border: none; background: none; cursor: pointer; }
         
-        /* BACK BUTTON */
-        .back-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; }
+        /* UPLOAD OVERLAY (Hidden input) */
+        input[type="file"] { display: none; }
+        .upload-trigger { font-size: 0.8em; color: #8e8e93; text-align: center; margin-top: 5px; cursor: pointer; }
+
+        @keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div id="menu-screen">
-        <div style="grid-column: span 2; text-align: center; margin-bottom: 10px;">
-            <h2>AGI-1 OS</h2>
-            <div class="status">● SYSTEM ONLINE</div>
+    <div class="header">
+        <div class="contact-info">
+            <div class="avatar-circle" onclick="triggerUpload()">
+                <img id="active-avatar" src="https://ui-avatars.com/api/?name=Jack&background=0D8ABC&color=fff">
+            </div>
+            <div class="name-box">
+                <div class="name" id="agent-name">Jack</div>
+                <div class="status">● Active</div>
+            </div>
         </div>
-
-        <div class="app-icon" onclick="openApp('DEFENSE')">
-            <span class="icon-emoji">🛡️</span>
-            <span class="icon-label">Defense</span>
-        </div>
-
-        <div class="app-icon" onclick="openApp('EDU')">
-            <span class="icon-emoji">🎓</span>
-            <span class="icon-label">Education</span>
-        </div>
-
-        <div class="app-icon" onclick="openApp('FINANCE')">
-            <span class="icon-emoji">📈</span>
-            <span class="icon-label">Finance</span>
-        </div>
-
-        <div class="app-icon" onclick="openApp('LEGAL')">
-            <span class="icon-emoji">⚖️</span>
-            <span class="icon-label">Justice</span>
-        </div>
-
-        <div class="app-icon" style="grid-column: span 2; background: #007aff;" onclick="openApp('ASSISTANT')">
-            <span class="icon-emoji">🤖</span>
-            <span class="icon-label">Jack (Personal)</span>
-        </div>
+        <button class="switch-btn" onclick="toggleAgent()">Switch to Julia ⇄</button>
     </div>
 
-    <div id="chat-screen">
-        <div class="header">
-            <button class="back-btn" onclick="goHome()">← Menu</button>
-            <span id="app-title" style="font-weight:bold;">APP NAME</span>
-            <span></span>
+    <div id="chat-window">
         </div>
-        <div id="chat-history"></div>
-        <div class="input-box">
-            <input type="text" id="user-input" placeholder="Type command...">
-            <button onclick="send()">➤</button>
-        </div>
+
+    <input type="file" id="upload-jack" accept="image/*" onchange="updatePhoto('Jack', this)">
+    <input type="file" id="upload-julia" accept="image/*" onchange="updatePhoto('Julia', this)">
+
+    <div class="input-bar">
+        <input type="text" id="user-msg" class="text-field" placeholder="Message..." onkeypress="handleEnter(event)">
+        <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
+    <div class="upload-trigger" onclick="triggerUpload()">Tap avatar to change photo</div>
 
     <script>
+        // --- CONFIGURATION ---
         const BRAIN_URL = "https://agi-backend-final.onrender.com";
-        let currentMode = "";
+        
+        // State
+        let currentAgent = "Jack";
+        let photos = {
+            "Jack": "https://ui-avatars.com/api/?name=Jack&background=0D8ABC&color=fff",
+            "Julia": "https://ui-avatars.com/api/?name=Julia&background=eb4034&color=fff"
+        };
 
-        function openApp(mode) {
-            currentMode = mode;
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('chat-screen').style.display = 'flex';
-            document.getElementById('chat-history').innerHTML = ""; // Clear chat
-            
-            // Set Title & Welcome Message
-            const titles = {
-                'DEFENSE': 'AEGIS WAR ROOM',
-                'EDU': 'AGI TUTOR',
-                'FINANCE': 'MARKET ANALYST',
-                'LEGAL': 'LEGAL COUNSEL',
-                'ASSISTANT': 'PERSONAL JACK'
-            };
-            document.getElementById('app-title').innerText = titles[mode];
-            
-            // Auto-ping the backend to start the session
-            pingBackend(mode);
+        // --- CORE FUNCTIONS ---
+
+        function toggleAgent() {
+            if (currentAgent === "Jack") {
+                currentAgent = "Julia";
+                document.querySelector('.switch-btn').innerText = "Switch to Jack ⇄";
+                addSystemMsg("Julia has entered the chat.");
+            } else {
+                currentAgent = "Jack";
+                document.querySelector('.switch-btn').innerText = "Switch to Julia ⇄";
+                addSystemMsg("Jack is now active.");
+            }
+            updateUI();
         }
 
-        function goHome() {
-            document.getElementById('chat-screen').style.display = 'none';
-            document.getElementById('menu-screen').style.display = 'grid';
+        function updateUI() {
+            document.getElementById('agent-name').innerText = currentAgent;
+            document.getElementById('active-avatar').src = photos[currentAgent];
         }
 
-        function addMsg(role, text) {
-            const div = document.createElement('div');
-            div.className = `msg ${role}`;
-            div.innerText = text;
-            document.getElementById('chat-history').appendChild(div);
+        function triggerUpload() {
+            if (currentAgent === "Jack") document.getElementById('upload-jack').click();
+            else document.getElementById('upload-julia').click();
         }
 
-        async function pingBackend(mode) {
-            addMsg('ai', "Connecting to Neural Core...");
-            
-            let endpoint = "";
-            if (mode === 'DEFENSE') endpoint = "/admin/defense/war_room";
-            if (mode === 'EDU') endpoint = "/agi/education/lesson?topic=Intro";
-            if (mode === 'FINANCE') endpoint = "/agi/finance/market";
-            if (mode === 'LEGAL') endpoint = "/agi/legal/review";
-            if (mode === 'ASSISTANT') endpoint = "/agi/assistant/dashboard";
-
-            try {
-                const res = await fetch(BRAIN_URL + endpoint);
-                const data = await res.json();
-                addMsg('ai', "Data Received: " + JSON.stringify(data, null, 2));
-            } catch (e) {
-                addMsg('ai', "Error: Brain is sleeping. Waking up...");
+        function updatePhoto(agent, input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photos[agent] = e.target.result; // Store base64 locally
+                    updateUI(); // Refresh view
+                }
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function send() {
-            const txt = document.getElementById('user-input').value;
-            if(!txt) return;
-            addMsg('user', txt);
-            document.getElementById('user-input').value = "";
-            setTimeout(() => addMsg('ai', "Processing... (Simulation Mode)"), 600);
+        function addSystemMsg(text) {
+            const div = document.createElement('div');
+            div.style.textAlign = "center";
+            div.style.fontSize = "0.8em";
+            div.style.color = "#8e8e93";
+            div.style.margin = "10px 0";
+            div.innerText = text;
+            document.getElementById('chat-window').appendChild(div);
         }
+
+        function addBubble(text, type) {
+            const container = document.getElementById('chat-window');
+            
+            // Add Label if it's AI
+            if (type !== 'user') {
+                const label = document.createElement('div');
+                label.className = 'sender-name';
+                label.innerText = currentAgent;
+                container.appendChild(label);
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = `message msg-${type}`;
+            bubble.innerText = text;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-msg');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addBubble(text, 'user');
+            input.value = "";
+
+            // Simulate Thinking
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'sender-name';
+            typingIndicator.innerText = `${currentAgent} is typing...`;
+            typingIndicator.id = 'typing';
+            document.getElementById('chat-window').appendChild(typingIndicator);
+
+            try {
+                // Determine which part of the brain to query based on Agent Persona
+                let endpoint = "/agi/assistant"; // Default
+                if (currentAgent === "Jack") endpoint = "/admin/defense/war_room"; // Jack = Defense/Strategy
+                if (currentAgent === "Julia") endpoint = "/agi/education"; // Julia = Education/Care
+
+                const res = await fetch(BRAIN_URL + endpoint);
+                const data = await res.json();
+                
+                document.getElementById('typing').remove();
+
+                // Format Reply based on Persona
+                let reply = "";
+                if (currentAgent === "Jack") {
+                    reply = `Strategy Update: Threat Level is ${data.threat_level || 'Unknown'}. Grid Integrity: ${data.grid_integrity || 'Stable'}.`;
+                } else {
+                    reply = `Hello. I've prepared a learning module on: ${data.subject || 'General Knowledge'}. Shall we begin?`;
+                }
+                
+                addBubble(reply, currentAgent.toLowerCase());
+
+            } catch (e) {
+                document.getElementById('typing').remove();
+                addBubble("I am having trouble connecting to the Neural Core. Please standby.", currentAgent.toLowerCase());
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        // Init
+        addSystemMsg("Connection Established to AGI-1 Core.");
     </script>
 </body>
 </html>
